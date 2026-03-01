@@ -14,7 +14,7 @@
         
         body { 
             background-color: var(--bg-dark); 
-            /* --- BACKGROUND IMAGE SECTION --- */
+            /* --- BACKGROUND IMAGE APPLIED --- */
             background-image: linear-gradient(rgba(0, 0, 0, 0.7), rgba(0, 0, 0, 0.7)), url('bg.jpg');
             background-size: cover;
             background-position: center;
@@ -36,7 +36,7 @@
             align-items: center;
             gap: 10px;
             margin-bottom: 8px;
-            background: rgba(0, 0, 0, 0.6); /* Darker for readability */
+            background: rgba(0, 0, 0, 0.6);
             padding: 5px 10px;
             border-radius: 8px;
             border: 1px solid rgba(255,0,0,0.3);
@@ -61,7 +61,6 @@
             50% { transform: translate(50%, 20%) scale(1.2); }
             100% { transform: translate(-10%, 60%) scale(1); }
         }
-        /* Intense smoke during Nightmares */
         body.nightmare-active .smoke-container { opacity: 0.8; }
         body.nightmare-active .smoke { animation-duration: 5s; background: radial-gradient(circle, rgba(255, 0, 0, 0.4) 0%, rgba(0,0,0,0) 70%); }
 
@@ -75,31 +74,12 @@
         .ticker span { padding-right: 50px; font-size: 0.6rem; color: var(--poppy-red); font-weight: bold; }
         @keyframes scrollText { 0% { transform: translateX(100%); } 100% { transform: translateX(-100%); } }
 
-        .nightmare-text {
-            font-weight: 900;
-            text-transform: uppercase;
-            animation: nightmareFlash 0.2s infinite;
-            text-shadow: 0 0 10px red;
-        }
+        .nightmare-text { font-weight: 900; text-transform: uppercase; animation: nightmareFlash 0.2s infinite; text-shadow: 0 0 10px red; }
+        @keyframes nightmareFlash { 0% { color: #ffffff; text-shadow: 0 0 5px #fff; } 50% { color: #ff0000; text-shadow: 0 0 20px #ff0000; } 100% { color: #ffffff; text-shadow: 0 0 5px #fff; } }
 
-        @keyframes nightmareFlash {
-            0% { color: #ffffff; text-shadow: 0 0 5px #fff; }
-            50% { color: #ff0000; text-shadow: 0 0 20px #ff0000; }
-            100% { color: #ffffff; text-shadow: 0 0 5px #fff; }
-        }
-
-        .extreme-glitch {
-            animation: extremeShake 0.05s infinite, flashRedBlack 0.1s infinite !important;
-        }
-        @keyframes extremeShake {
-            0% { transform: translate(5px, 5px); }
-            50% { transform: translate(-5px, -5px); }
-            100% { transform: translate(5px, -5px); }
-        }
-        @keyframes flashRedBlack {
-            0% { background-color: #ff0000; }
-            100% { background-color: #000000; }
-        }
+        .extreme-glitch { animation: extremeShake 0.05s infinite, flashRedBlack 0.1s infinite !important; }
+        @keyframes extremeShake { 0% { transform: translate(5px, 5px); } 50% { transform: translate(-5px, -5px); } 100% { transform: translate(5px, -5px); } }
+        @keyframes flashRedBlack { 0% { background-color: #ff0000; } 100% { background-color: #000000; } }
 
         #global-msg {
             position: fixed; top: -100px; left: 0; width: 100%; 
@@ -109,15 +89,8 @@
             text-transform: uppercase; font-size: 0.8rem;
         }
 
-        body.nightmare-active {
-            background-color: #0d0000;
-            animation: nightmareGlitch 0.15s infinite;
-        }
-        @keyframes nightmareGlitch {
-            0% { filter: sepia(0.5) contrast(1.4) brightness(0.9); }
-            50% { filter: sepia(0.8) contrast(1.2) brightness(0.7); }
-            100% { filter: sepia(0.5) contrast(1.4) brightness(0.9); }
-        }
+        body.nightmare-active { background-color: #0d0000; animation: nightmareGlitch 0.15s infinite; }
+        @keyframes nightmareGlitch { 0% { filter: sepia(0.5) contrast(1.4) brightness(0.9); } 50% { filter: sepia(0.8) contrast(1.2) brightness(0.7); } 100% { filter: sepia(0.5) contrast(1.4) brightness(0.9); } }
 
         body::before {
             content: " "; display: block; position: absolute; inset: 0;
@@ -125,7 +98,7 @@
             z-index: 999; background-size: 100% 3px, 3px 100%; pointer-events: none;
         }
 
-        /* --- LOG BOX --- */
+        /* --- MODALS & LOGS --- */
         #update-log { display: flex; position: fixed; inset: 0; background: rgba(0,0,0,0.95); z-index: 9000; padding: 20px; flex-direction: column; align-items: center; justify-content: center; }
         .log-box { background: #0a0a0a; border: 2px solid var(--poppy-red); padding: 20px; border-radius: 15px; width: 90%; max-width: 380px; box-shadow: 0 0 20px rgba(255,0,0,0.5); }
         .log-box h2 { color: var(--poppy-red); margin-top: 0; font-size: 1.4rem; text-align: center; border-bottom: 1px solid #333; padding-bottom: 10px; }
@@ -165,7 +138,6 @@
 
         .panel-row { width: 85%; display: flex; gap: 5px; margin-bottom: 8px; z-index: 10;}
         .sub-panel { flex: 1; background: rgba(0,0,0,0.7); border: 1px solid #333; border-radius: 8px; padding: 5px; display: flex; flex-direction: column; align-items: center; backdrop-filter: blur(5px); }
-        
         .panel-btn { width: 100%; border: none; padding: 5px; border-radius: 4px; font-weight: bold; font-size: 0.55rem; margin-top: 3px; cursor: pointer; }
 
         .controls { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; width: 90%; z-index: 10;}
@@ -192,7 +164,7 @@
     </div>
 
     <audio id="bg-music" loop>
-        <source src="DeepSleepAmbient.mp4" type="audio/mpeg">
+        <source src="DeepSleepAmbient.mp3" type="audio/mpeg">
     </audio>
 
     <div id="global-msg">GLOBAL: PLAYER just found a NIGHTMARE!</div>
@@ -346,13 +318,11 @@
         }
         
         function closeLog() { 
-            // UPDATED: Forces the audio to "wake up" for mobile users
             if(!aCtx) aCtx = new (window.AudioContext || window.webkitAudioContext)();
             if(aCtx.state === 'suspended') aCtx.resume();
-
             if(music) {
                 music.volume = savedVolume;
-                music.play().catch(e => console.log("Audio play blocked: Try tapping the screen first."));
+                music.play().catch(e => console.log("Audio play blocked."));
             }
             document.getElementById('update-log').style.display = 'none'; 
             play(400, 'sine', 0.1, 0.1); 
@@ -420,10 +390,8 @@
         function exchangeGel() {
             let tradeCost = Math.floor(10 + (gelTrades * 5));
             if (gel >= tradeCost) {
-                gel -= tradeCost;
-                gelTrades++;
-                let reward = 5000 * (rebirths + 1);
-                flowers += reward;
+                gel -= tradeCost; gelTrades++;
+                let reward = 5000 * (rebirths + 1); flowers += reward;
                 play(1000, 'square', 0.2, 0.5);
                 showAlert(`GEL TRADE: +${reward.toLocaleString()} 🌸`, "var(--gel-cyan)");
                 updateUI();
@@ -540,8 +508,7 @@
             if (flowers >= rbCost) { 
                 flowers = 0; rebirths++; 
                 play(200, 'sine', 0.3, 0.2); play(800, 'sine', 0.3, 0.8); 
-                updateUI(); 
-                showAlert("REBIRTH COMPLETE!", "var(--gold)"); 
+                updateUI(); showAlert("REBIRTH COMPLETE!", "var(--gold)"); 
             } 
             else { play(150, 'sawtooth', 0.1, 0.2); showAlert("NEED FLOWERS!", "var(--poppy-red)"); }
         }
