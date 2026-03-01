@@ -1,0 +1,552 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>Poppy Playtime RNG - Deep Sleep</title>
+    <style>
+        :root {
+            --huggy-blue: #0055ff; --poppy-red: #ff0044; --luck-green: #00ff88;
+            --gold: #ffae00; --bg-dark: #050505; --ultra-purple: #bf00ff;
+            --gel-cyan: #00f2ff;
+            --secret-rainbow: linear-gradient(90deg, #ff0000, #ff8000, #ffff00, #00ff00, #00ffff, #0000ff, #8000ff, #ff00ff);
+        }
+        
+        body { 
+            background-color: var(--bg-dark); 
+            /* --- BACKGROUND IMAGE SECTION --- */
+            background-image: linear-gradient(rgba(0, 0, 0, 0.7), rgba(0, 0, 0, 0.7)), url('bg.jpg');
+            background-size: cover;
+            background-position: center;
+            background-attachment: fixed;
+            background-repeat: no-repeat;
+            /* --------------------------------- */
+            color: white; 
+            font-family: 'Courier New', monospace; 
+            display: flex; flex-direction: column; align-items: center; justify-content: center; 
+            height: 100vh; margin: 0; overflow: hidden; transition: 0.3s;
+            filter: drop-shadow(1px 0px 0px rgba(255,0,0,0.3)) drop-shadow(-1px 0px 0px rgba(0,255,255,0.3));
+            text-shadow: 0 0 2px rgba(255,255,255,0.1);
+        }
+
+        /* --- VOLUME CONTROLS --- */
+        .audio-panel {
+            width: 90%;
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            margin-bottom: 8px;
+            background: rgba(0, 0, 0, 0.6); /* Darker for readability */
+            padding: 5px 10px;
+            border-radius: 8px;
+            border: 1px solid rgba(255,0,0,0.3);
+            z-index: 10;
+        }
+        .audio-panel label { font-size: 0.6rem; color: var(--poppy-red); font-weight: bold; }
+        #volumeSlider { flex-grow: 1; accent-color: var(--poppy-red); cursor: pointer; }
+        #muteBtn { background: none; border: 1px solid var(--poppy-red); color: var(--poppy-red); font-size: 0.5rem; padding: 2px 5px; border-radius: 4px; }
+
+        /* --- RED NIGHTMARE SMOKE --- */
+        .smoke-container {
+            position: fixed; top: 0; left: 0; width: 100%; height: 100%;
+            pointer-events: none; z-index: 5; overflow: hidden; opacity: 0.5;
+        }
+        .smoke {
+            position: absolute; width: 600px; height: 600px;
+            background: radial-gradient(circle, rgba(255, 0, 0, 0.2) 0%, rgba(0,0,0,0) 70%);
+            border-radius: 50%; filter: blur(60px); animation: drift 20s infinite alternate ease-in-out;
+        }
+        @keyframes drift {
+            0% { transform: translate(-20%, -20%) scale(1); }
+            50% { transform: translate(50%, 20%) scale(1.2); }
+            100% { transform: translate(-10%, 60%) scale(1); }
+        }
+        /* Intense smoke during Nightmares */
+        body.nightmare-active .smoke-container { opacity: 0.8; }
+        body.nightmare-active .smoke { animation-duration: 5s; background: radial-gradient(circle, rgba(255, 0, 0, 0.4) 0%, rgba(0,0,0,0) 70%); }
+
+        /* --- DEEP SLEEP SCROLLER --- */
+        .ticker-wrap {
+            position: fixed; bottom: 0; width: 100%; overflow: hidden;
+            background: rgba(0, 0, 0, 0.8); border-top: 1px solid var(--poppy-red);
+            padding: 5px 0; z-index: 10;
+        }
+        .ticker { display: flex; white-space: nowrap; animation: scrollText 25s linear infinite; }
+        .ticker span { padding-right: 50px; font-size: 0.6rem; color: var(--poppy-red); font-weight: bold; }
+        @keyframes scrollText { 0% { transform: translateX(100%); } 100% { transform: translateX(-100%); } }
+
+        .nightmare-text {
+            font-weight: 900;
+            text-transform: uppercase;
+            animation: nightmareFlash 0.2s infinite;
+            text-shadow: 0 0 10px red;
+        }
+
+        @keyframes nightmareFlash {
+            0% { color: #ffffff; text-shadow: 0 0 5px #fff; }
+            50% { color: #ff0000; text-shadow: 0 0 20px #ff0000; }
+            100% { color: #ffffff; text-shadow: 0 0 5px #fff; }
+        }
+
+        .extreme-glitch {
+            animation: extremeShake 0.05s infinite, flashRedBlack 0.1s infinite !important;
+        }
+        @keyframes extremeShake {
+            0% { transform: translate(5px, 5px); }
+            50% { transform: translate(-5px, -5px); }
+            100% { transform: translate(5px, -5px); }
+        }
+        @keyframes flashRedBlack {
+            0% { background-color: #ff0000; }
+            100% { background-color: #000000; }
+        }
+
+        #global-msg {
+            position: fixed; top: -100px; left: 0; width: 100%; 
+            background: rgba(255, 0, 0, 0.9); color: white; padding: 15px;
+            text-align: center; font-weight: bold; z-index: 5000;
+            border-bottom: 3px solid white; transition: 0.5s;
+            text-transform: uppercase; font-size: 0.8rem;
+        }
+
+        body.nightmare-active {
+            background-color: #0d0000;
+            animation: nightmareGlitch 0.15s infinite;
+        }
+        @keyframes nightmareGlitch {
+            0% { filter: sepia(0.5) contrast(1.4) brightness(0.9); }
+            50% { filter: sepia(0.8) contrast(1.2) brightness(0.7); }
+            100% { filter: sepia(0.5) contrast(1.4) brightness(0.9); }
+        }
+
+        body::before {
+            content: " "; display: block; position: absolute; inset: 0;
+            background: linear-gradient(rgba(18, 16, 16, 0) 50%, rgba(0, 0, 0, 0.1) 50%), linear-gradient(90deg, rgba(255, 0, 0, 0.02), rgba(0, 255, 0, 0.01), rgba(0, 255, 0, 0.02));
+            z-index: 999; background-size: 100% 3px, 3px 100%; pointer-events: none;
+        }
+
+        /* --- LOG BOX --- */
+        #update-log { display: flex; position: fixed; inset: 0; background: rgba(0,0,0,0.95); z-index: 9000; padding: 20px; flex-direction: column; align-items: center; justify-content: center; }
+        .log-box { background: #0a0a0a; border: 2px solid var(--poppy-red); padding: 20px; border-radius: 15px; width: 90%; max-width: 380px; box-shadow: 0 0 20px rgba(255,0,0,0.5); }
+        .log-box h2 { color: var(--poppy-red); margin-top: 0; font-size: 1.4rem; text-align: center; border-bottom: 1px solid #333; padding-bottom: 10px; }
+        .log-box li { font-size: 0.75rem; margin-bottom: 10px; color: #ccc; }
+
+        #warning-overlay {
+            display: none; position: fixed; inset: 0; background: rgba(20, 0, 0, 0.98);
+            z-index: 1000; flex-direction: column; align-items: center; justify-content: center;
+            border: 15px solid var(--poppy-red); animation: flashRed 0.4s infinite alternate;
+        }
+        @keyframes flashRed { from { border-color: #400; } to { border-color: #f00; } }
+        .warning-text { color: var(--poppy-red); font-size: 1.8rem; font-weight: bold; text-align: center; margin: 10px; text-transform: uppercase; }
+        .warning-sub { color: white; font-size: 0.9rem; margin-bottom: 30px; text-align: center; padding: 0 20px; font-weight: bold; }
+
+        #boost-container { background: rgba(191, 0, 255, 0.2); border: 1px solid var(--ultra-purple); padding: 5px 15px; border-radius: 5px; margin-bottom: 5px; font-size: 0.7rem; text-align: center; backdrop-filter: blur(5px); }
+        .boost-active-text { color: var(--ultra-purple); font-weight: bold; text-shadow: 0 0 10px var(--ultra-purple); animation: pulse 1s infinite; }
+        
+        .game-title { font-size: 1.1rem; font-weight: bold; color: var(--poppy-red); text-shadow: 2px 0px 0px rgba(0,255,255,0.5); margin-bottom: 2px; text-transform: uppercase; letter-spacing: 2px; }
+        #game-alert { color: var(--luck-green); font-weight: bold; height: 20px; text-transform: uppercase; font-size: 0.7rem; text-align: center; }
+        
+        .currency-wrap { display: flex; gap: 10px; margin: 5px 0; }
+        #currency, #gel-ui, #spin-ui { background: rgba(0,0,0,0.6); padding: 5px 15px; border-radius: 50px; border: 1px solid var(--gold); font-size: 1rem; backdrop-filter: blur(5px); }
+        #gel-ui { border-color: var(--gel-cyan); color: var(--gel-cyan); }
+        #spin-ui { border-color: var(--huggy-blue); color: var(--huggy-blue); }
+        
+        #wheel { width: 160px; height: 160px; border-radius: 50%; border: 8px solid #222; display: flex; flex-direction: column; align-items: center; justify-content: center; background: radial-gradient(circle, #333, #000); transition: transform 3s cubic-bezier(0.1, 0, 0.1, 1); text-align: center; z-index: 10; box-shadow: 0 0 20px rgba(0,0,0,0.8); }
+        
+        .luck-bar { display: flex; gap: 4px; margin: 8px 0; width: 95%; justify-content: center; z-index: 10;}
+        .luck-btn { background: rgba(0,0,0,0.7); border: 1px solid #333; color: #555; padding: 8px 2px; border-radius: 8px; font-size: 0.55rem; cursor: pointer; flex: 1; line-height: 1.2; backdrop-filter: blur(5px); }
+        .luck-btn.active { border-color: var(--luck-green); color: var(--luck-green); background: rgba(0, 255, 136, 0.1); }
+
+        .stat-grid { display: grid; grid-template-columns: repeat(4, 1fr); gap: 5px; margin-bottom: 15px; background: #111; padding: 10px; border-radius: 10px; border: 1px solid #333; }
+        .stat-box { font-size: 0.45rem; text-align: center; display: flex; flex-direction: column; }
+        
+        .rainbow-text { background: var(--secret-rainbow); background-size: 400%; -webkit-background-clip: text; -webkit-text-fill-color: transparent; animation: rainbowMove 3s linear infinite; font-weight: 900; text-transform: uppercase; }
+        @keyframes rainbowMove { 0% { background-position: 0%; } 100% { background-position: 400%; } }
+
+        .panel-row { width: 85%; display: flex; gap: 5px; margin-bottom: 8px; z-index: 10;}
+        .sub-panel { flex: 1; background: rgba(0,0,0,0.7); border: 1px solid #333; border-radius: 8px; padding: 5px; display: flex; flex-direction: column; align-items: center; backdrop-filter: blur(5px); }
+        
+        .panel-btn { width: 100%; border: none; padding: 5px; border-radius: 4px; font-weight: bold; font-size: 0.55rem; margin-top: 3px; cursor: pointer; }
+
+        .controls { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; width: 90%; z-index: 10;}
+        button { padding: 10px; font-weight: bold; border-radius: 8px; border: none; cursor: pointer; text-transform: uppercase; background: #222; color: white; }
+        #spinBtn { background: var(--huggy-blue); grid-column: span 2; font-size: 0.9rem; box-shadow: 0 4px 0 #0033aa; }
+        #spinBtn:active { transform: translateY(2px); box-shadow: 0 2px 0 #0033aa; }
+        .toggle-active { color: var(--luck-green) !important; border: 1px solid var(--luck-green) !important; }
+
+        .modal { display: none; position: fixed; inset: 0; background: rgba(0,0,0,0.95); z-index: 100; flex-direction: column; align-items: center; justify-content: center; }
+        .modal-content { background: #0a0a0a; border: 2px solid var(--poppy-red); width: 85%; height: 80%; padding: 20px; border-radius: 20px; display: flex; flex-direction: column; }
+        #indexList { flex-grow: 1; overflow-y: auto; }
+        .index-row { border-bottom: 1px solid #222; padding: 12px 0; display: flex; justify-content: space-between; align-items: center; cursor: pointer; }
+        
+        #specCard { display: none; position: fixed; top: 50%; left: 50%; transform: translate(-50%, -50%); width: 75%; background: #000; border: 2px solid var(--gold); border-radius: 15px; padding: 15px; z-index: 200; text-align: center; }
+        .spec-item { font-size: 0.7rem; margin: 8px 0; display: flex; justify-content: space-between; border-bottom: 1px solid #222; padding-bottom: 2px; }
+    </style>
+</head>
+<body id="mainBody">
+
+    <div class="smoke-container">
+        <div class="smoke" style="top:-10%; left:-10%;"></div>
+        <div class="smoke" style="bottom:-10%; right:-10%; animation-delay: -5s;"></div>
+        <div class="smoke" style="top:40%; left:30%; animation-delay: -10s; width:400px; height:400px;"></div>
+    </div>
+
+    <audio id="bg-music" loop>
+        <source src="DeepSleepAmbient.mp3" type="audio/mpeg">
+    </audio>
+
+    <div id="global-msg">GLOBAL: PLAYER just found a NIGHTMARE!</div>
+
+    <div id="update-log">
+        <div class="log-box">
+            <h2>🌙 DEEP SLEEP v2.1</h2>
+            <ul>
+                <li>🖼️ <b>THEME:</b> Background image support active.</li>
+                <li>🔊 <b>AUDIO BOOST:</b> Default volume raised to 100%.</li>
+                <li>⚠️ <b>NIGHTMARES:</b> 1/10M chance! During Factory Corruption (1%), odds are 50x better!</li>
+            </ul>
+            <button onclick="closeLog()" style="width:100%; background:var(--poppy-red); color:white; font-size:0.8rem; padding:10px;">ENTER THE DREAM</button>
+        </div>
+    </div>
+
+    <div id="warning-overlay">
+        <div class="warning-text">⚠️ SYSTEM WARNING ⚠️</div>
+        <div class="warning-sub">PLAYER, ARE YOU SURE? YOU WILL LOSE EVERYTHING.</div>
+        <button id="wipeFinalBtn" onclick="finalReset()" style="background:white; color:black; width:80%; padding:15px; margin:5px; font-weight:bold;">YES, WIPE EVERYTHING</button>
+        <button onclick="cancelReset()" style="background:#333; color:white; width:80%; padding:10px; margin:5px;">CANCEL</button>
+    </div>
+
+    <div id="boost-container">SERVER BOOST: <span id="boost-timer">60s</span></div>
+    <div class="game-title">Poppy Playtime RNG</div>
+    <div id="game-alert">FACTORY ONLINE</div>
+    
+    <div class="currency-wrap">
+        <div id="currency">🌸 <span id="fCount">0</span></div>
+        <div id="gel-ui">🧪 <span id="gelCount">0</span></div>
+        <div id="spin-ui">🔄 <span id="spinDisplay">0</span></div>
+    </div>
+
+    <div id="wheel"><div id="wheel-text" style="color:#fff">READY</div></div>
+
+    <div class="luck-bar">
+        <button class="luck-btn active" onclick="setLuck(1, 0, this)">1x <br> FREE</button>
+        <button class="luck-btn" onclick="setLuck(5, 1200, this)">5x <br> 🌸1.2k</button>
+        <button class="luck-btn" onclick="setLuck(15, 7000, this)">15x <br> 🌸7k</button>
+        <button class="luck-btn" onclick="setLuck(50, 50000, this)" style="color:var(--gold)">50x <br> 🌸50k</button>
+    </div>
+
+    <div class="panel-row">
+        <div class="sub-panel">
+            <div style="font-size:0.5rem; color:var(--luck-green); font-weight:bold;">LUCK: <span id="luck-mult">1.0x</span></div>
+            <div style="font-size:0.5rem; color:var(--gold)">REBIRTH: <b id="rLvl">0</b></div>
+            <button class="panel-btn" id="rebirthBtn" onclick="doRebirth()" style="background:var(--gold); color:black;">COST: 🌸<span id="rCost">1k</span></button>
+        </div>
+        <div class="sub-panel" style="border-color:var(--gel-cyan)">
+            <div style="font-size:0.5rem; color:var(--gel-cyan)">GEL TRADE</div>
+            <button class="panel-btn" onclick="exchangeGel()" style="background:var(--gel-cyan); color:black;">USE: 🧪<span id="gelTradeCost">10</span></button>
+        </div>
+    </div>
+
+    <div class="audio-panel">
+        <label>VOL</label>
+        <input type="range" id="volumeSlider" min="0" max="1" step="0.01" value="1" oninput="adjustVolume(this.value)">
+        <button id="muteBtn" onclick="toggleMute()">MUTE</button>
+    </div>
+
+    <div class="controls">
+        <button id="spinBtn" onclick="startSpin()">PULL GRABPACK</button>
+        <button id="quickBtn" onclick="toggleQuick()" style="color:#888">QUICK: OFF</button>
+        <button id="autoBtn" onclick="toggleAuto()" style="color:#888">AUTO: OFF</button>
+        <button onclick="openIndex()" style="grid-column: span 2;">COLLECTION INDEX</button>
+    </div>
+
+    <div class="ticker-wrap">
+        <div class="ticker">
+            <span>🌙 DEEP SLEEP UPDATE: FIND THE NIGHTMARES</span>
+            <span>⚠️ FACTORY CORRUPTION CHANCE: 1%</span>
+            <span>🧪 GEL DROP CHANCE: 10%</span>
+            <span>🌸 REBIRTHS BOOST PERMANENT LUCK</span>
+            <span>🌙 DEEP SLEEP UPDATE: FIND THE NIGHTMARES</span>
+        </div>
+    </div>
+
+    <div id="idxModal" class="modal"><div class="modal-content">
+        <div style="display:flex; justify-content: space-between; align-items: center; margin-bottom: 10px;">
+            <h3 id="modalTitle" style="color:var(--poppy-red); margin:0;">COLLECTION</h3>
+            <button onclick="toggleIndexTab()" id="tabBtn" style="padding:5px 10px; font-size:0.6rem; background:#333;">ACHIEVEMENTS</button>
+        </div>
+        
+        <div style="background:rgba(255,0,0,0.1); border:1px solid var(--poppy-red); border-radius:10px; padding:8px; margin-bottom:10px; font-size:0.6rem;">
+            <b style="color:red">🌙 NIGHTMARE MANIFESTO:</b><br>
+            Standard: 1 in 10,000,000 | Corrupted: 1 in 200,000
+        </div>
+
+        <div id="indexList"></div>
+        <div style="display:flex; flex-direction:column; gap:5px; margin-top:10px;">
+            <button id="resetBtn" onclick="triggerWarning()" style="background:#200; color:red; border:1px solid red; padding:5px;">⚠️ FACTORY RESET DATA ⚠️</button>
+            <button onclick="closeIndex()" style="background:var(--poppy-red); padding:10px; border:none; border-radius:8px; font-weight:bold; color:white;">CLOSE</button>
+        </div>
+    </div></div>
+
+    <div id="specCard"><h2 id="specName" style="margin:0 0 10px 0; font-size: 1rem;">---</h2><div id="specList"></div><button onclick="closeSpec()" style="width:100%; margin-top:15px; background:white; color:black; padding:8px; border:none; border-radius:5px; font-weight:bold;">DONE</button></div>
+
+    <script>
+        let aCtx;
+        const music = document.getElementById('bg-music');
+        let isMuted = false;
+        let savedVolume = 1.0;
+
+        function adjustVolume(val) {
+            if(!music) return;
+            music.volume = val;
+            savedVolume = val;
+            if(val > 0) { isMuted = false; document.getElementById('muteBtn').innerText = "MUTE"; }
+        }
+
+        function toggleMute() {
+            if(!music) return;
+            isMuted = !isMuted;
+            if(isMuted) {
+                music.volume = 0;
+                document.getElementById('muteBtn').innerText = "UNMUTE";
+                document.getElementById('muteBtn').style.color = "white";
+                document.getElementById('muteBtn').style.background = "var(--poppy-red)";
+            } else {
+                music.volume = savedVolume;
+                document.getElementById('muteBtn').innerText = "MUTE";
+                document.getElementById('muteBtn').style.color = "var(--poppy-red)";
+                document.getElementById('muteBtn').style.background = "none";
+            }
+        }
+
+        function play(f, type='sine', v=0.1, d=0.2) {
+            if(!aCtx) aCtx = new (window.AudioContext || window.webkitAudioContext)();
+            if(aCtx.state === 'suspended') aCtx.resume();
+            const o = aCtx.createOscillator(); const g = aCtx.createGain();
+            o.type = type; o.frequency.setValueAtTime(f, aCtx.currentTime);
+            let sfxVol = v * savedVolume;
+            g.gain.setValueAtTime(sfxVol, aCtx.currentTime);
+            g.gain.exponentialRampToValueAtTime(0.0001, aCtx.currentTime + d);
+            o.connect(g); g.connect(aCtx.destination);
+            o.start(); o.stop(aCtx.currentTime + d);
+        }
+
+        function playNM() { play(60, 'sawtooth', 0.3, 0.8); play(40, 'sine', 0.4, 1.2); }
+
+        function triggerWarning() {
+            document.getElementById('warning-overlay').style.display = 'flex';
+            let alarmCount = 0;
+            let alarmInterval = setInterval(() => {
+                if(document.getElementById('warning-overlay').style.display === 'none') { clearInterval(alarmInterval); return; }
+                play(600, 'sawtooth', 0.1, 0.4);
+                setTimeout(() => play(400, 'sawtooth', 0.1, 0.4), 200);
+                alarmCount++;
+                if(alarmCount > 20) clearInterval(alarmInterval);
+            }, 500);
+        }
+        
+        function closeLog() { 
+            if(music) {
+                music.volume = savedVolume;
+                music.play().catch(e => console.log("Audio play blocked"));
+            }
+            document.getElementById('update-log').style.display = 'none'; 
+            play(400, 'sine', 0.1, 0.1); 
+        }
+
+        function cancelReset() { play(200, 'sine', 0.2, 0.1); document.getElementById('warning-overlay').style.display = 'none'; }
+        
+        function finalReset() { 
+            const btn = document.getElementById('wipeFinalBtn');
+            btn.innerText = "SHUTTING DOWN...";
+            btn.disabled = true;
+            play(300, 'sawtooth', 0.3, 1.5);
+            play(150, 'sawtooth', 0.3, 1.5);
+            play(75, 'sawtooth', 0.5, 2.0);
+            setTimeout(() => { localStorage.clear(); window.location.reload(true); }, 1500); 
+        }
+
+        const charNames = ["Huggy Wuggy", "Poppy", "Bron", "Cat-Bee", "Boogie Bot", "Mommy Long Legs", "Kissy Missy", "Bunzo Bunny", "Mini Huggies", "PJ Pug-a-Pillar", "CatNap", "DogDay", "Smiling Critters", "Ruined Critters", "Miss Delight", "Doey", "Yarnaby", "Nightmare Critters", "Dr. Harley Sawyer", "Lily Lovebraids", "Chum Chompkins", "Giblet", "The Prototype", "Injured Huggy", "Broken Poppy", "Injured Kissy", "Wrongside Outimals", "Onnimals", "The Player"];
+        const rarities = [
+            { id: "Basic", chance: 1, color: "#888", reward: 50 },
+            { id: "Uncommon", chance: 25, color: "var(--luck-green)", reward: 150 },
+            { id: "Epic", chance: 300, color: "var(--huggy-blue)", reward: 500 },
+            { id: "Legendary", chance: 4500, color: "var(--gold)", reward: 2500 },
+            { id: "Mythic", chance: 60000, color: "var(--poppy-red)", reward: 10000 },
+            { id: "Secret", chance: 1200000, color: "rainbow", reward: 50000 },
+            { id: "Nightmare", chance: 10000000, color: "nightmare", reward: 200000 }
+        ];
+
+        let flowers = parseInt(localStorage.getItem('p_fl')) || 0;
+        let rebirths = parseInt(localStorage.getItem('p_rb')) || 0;
+        let gel = parseInt(localStorage.getItem('p_gel')) || 0;
+        let gelTrades = parseInt(localStorage.getItem('p_gelTrades')) || 0;
+        let totalSpins = parseInt(localStorage.getItem('p_spins')) || 0;
+        let collection = JSON.parse(localStorage.getItem('p_col')) || {};
+        let luck = 1, lCost = 0, isSpinning = false, isAuto = false, isQuick = false, rot = 0, currentTab = "index";
+        let boostTime = 60, boostActive = false, nightmareMode = false;
+
+        function updateBoost() {
+            boostTime--;
+            if (boostTime <= 0) {
+                if (!boostActive) { boostActive = true; boostTime = 10; document.getElementById('boost-timer').innerHTML = '<span class="boost-active-text">ULTRA 25x ACTIVE!</span>'; play(1200, 'square', 0.1, 0.5); }
+                else { boostActive = false; boostTime = 60; document.getElementById('boost-timer').innerText = boostTime + "s"; }
+            } else { if (!boostActive) document.getElementById('boost-timer').innerText = boostTime + "s"; else document.getElementById('boost-timer').innerHTML = `<span class="boost-active-text">ULTRA 25x (${boostTime}s)</span>`; }
+        }
+        setInterval(updateBoost, 1000);
+
+        function updateUI() {
+            document.getElementById('fCount').innerText = flowers.toLocaleString();
+            document.getElementById('gelCount').innerText = gel.toLocaleString();
+            document.getElementById('spinDisplay').innerText = totalSpins.toLocaleString();
+            document.getElementById('rLvl').innerText = rebirths;
+            document.getElementById('luck-mult').innerText = (1 + (rebirths * 0.1)).toFixed(1) + "x";
+            let rbCost = Math.floor(1000 * Math.pow(1.5, rebirths));
+            document.getElementById('rCost').innerText = rebirths >= 100 ? "MAX" : rbCost.toLocaleString();
+            let tradeCost = Math.floor(10 + (gelTrades * 5));
+            document.getElementById('gelTradeCost').innerText = tradeCost;
+            localStorage.setItem('p_fl', flowers);
+            localStorage.setItem('p_rb', rebirths);
+            localStorage.setItem('p_gel', gel);
+            localStorage.setItem('p_gelTrades', gelTrades);
+            localStorage.setItem('p_col', JSON.stringify(collection));
+            localStorage.setItem('p_spins', totalSpins);
+        }
+
+        function exchangeGel() {
+            let tradeCost = Math.floor(10 + (gelTrades * 5));
+            if (gel >= tradeCost) {
+                gel -= tradeCost;
+                gelTrades++;
+                let reward = 5000 * (rebirths + 1);
+                flowers += reward;
+                play(1000, 'square', 0.2, 0.5);
+                showAlert(`GEL TRADE: +${reward.toLocaleString()} 🌸`, "var(--gel-cyan)");
+                updateUI();
+            } else { play(150, 'sawtooth', 0.1, 0.2); showAlert("NEED MORE GEL!", "var(--poppy-red)"); }
+        }
+
+        function triggerNightmareEvent() {
+            nightmareMode = true;
+            document.body.classList.add('nightmare-active');
+            showAlert("⚠️ NIGHTMARE 50X LUCK ACTIVETED ⚠️", "red");
+            playNM();
+            setTimeout(() => {
+                nightmareMode = false;
+                document.body.classList.remove('nightmare-active');
+                showAlert("ONLINE", "var(--luck-green)");
+            }, 15000);
+        }
+
+        function showGlobalMessage(type, char) {
+            const msg = document.getElementById('global-msg');
+            msg.innerText = type === "Nightmare" ? `GLOBAL: YOU FOUND A NIGHTMARE ${char.toUpperCase()}!` : `GLOBAL: YOU FOUND A SECRET ${char.toUpperCase()}!`;
+            msg.style.background = type === "Nightmare" ? "rgba(255, 0, 0, 0.9)" : "rgba(191, 0, 255, 0.9)";
+            msg.style.top = "0px";
+            setTimeout(() => { msg.style.top = "-100px"; }, 5000);
+        }
+
+        function startSpin() {
+            if(isSpinning) return;
+            if(flowers < lCost) { play(150, 'sawtooth', 0.1, 0.2); showAlert("YOU DONT HAVE ENOUGH FLOWERS!", "var(--poppy-red)"); isAuto = false; updateButtonStates(); return; }
+            if(!nightmareMode && Math.random() < 0.01) triggerNightmareEvent();
+            isSpinning = true; flowers -= lCost; totalSpins++; 
+            if(Math.random() < 0.10) gel += Math.floor(Math.random() * 5) + 1;
+            updateUI();
+            let activeLuck = (luck * (1 + (rebirths * 0.1))) * (boostActive ? 25 : 1);
+            let rolledR = rarities[0];
+            for(let i=rarities.length-1; i>=0; i--) { 
+                let chance = rarities[i].chance;
+                if(nightmareMode && rarities[i].id === "Nightmare") chance /= 50;
+                if(Math.random() < (activeLuck / chance)) { rolledR = rarities[i]; break; } 
+            }
+            let rolledC = charNames[Math.floor(Math.random() * charNames.length)];
+            const delay = isQuick ? 50 : 3000;
+            if(!isQuick) { rot += 1800 + Math.floor(Math.random()*360); document.getElementById('wheel').style.transform = `rotate(${rot}deg)`; play(400, 'triangle', 0.1, 0.3); }
+            setTimeout(() => {
+                flowers += rolledR.reward;
+                const txt = document.getElementById('wheel-text');
+                if(rolledR.id === "Secret") { play(1500, 'square', 0.2, 1.5); showGlobalMessage("Secret", rolledC); txt.innerHTML = `<div class="rainbow-text">${rolledC}</div><div class="rainbow-text" style="font-size:0.7rem;">SECRET</div>`; }
+                else if(rolledR.id === "Nightmare") { playNM(); document.body.classList.add('extreme-glitch'); showGlobalMessage("Nightmare", rolledC); txt.innerHTML = `<div class="nightmare-text">${rolledC}</div><div class="nightmare-text" style="font-size:0.7rem;">NIGHTMARE</div>`; setTimeout(() => { document.body.classList.remove('extreme-glitch'); }, 2000); }
+                else { play(600 + (rarities.indexOf(rolledR)*100), 'sine', 0.1, 0.2); txt.innerHTML = `<div style="color:white">${rolledC}</div><div style="color:${rolledR.color}; font-size:0.7rem;">${rolledR.id}</div>`; }
+                if(!collection[rolledC]) collection[rolledC] = [];
+                if(!collection[rolledC].includes(rolledR.id)) collection[rolledC].push(rolledR.id);
+                updateUI(); isSpinning = false;
+                if(isAuto) setTimeout(startSpin, isQuick ? 50 : 1000);
+            }, delay);
+        }
+
+        function openIndex(noSound = false) { 
+            if(!noSound) play(800, 'sine', 0.1, 0.1);
+            const list = document.getElementById('indexList'); list.innerHTML = "";
+            if(currentTab === "index") {
+                let counts = { Basic: 0, Uncommon: 0, Epic: 0, Legendary: 0, Mythic: 0, Secret: 0, Nightmare: 0 };
+                Object.values(collection).forEach(arr => arr.forEach(r => counts[r]++));
+                list.innerHTML = `<div class="stat-grid">
+                    <div class="stat-box" style="color:#888"><span>BASIC</span><b>${counts.Basic}</b></div>
+                    <div class="stat-box" style="color:var(--luck-green)"><span>UNC</span><b>${counts.Uncommon}</b></div>
+                    <div class="stat-box" style="color:var(--huggy-blue)"><span>EPIC</span><b>${counts.Epic}</b></div>
+                    <div class="stat-box" style="color:var(--gold)"><span>LEG</span><b>${counts.Legendary}</b></div>
+                    <div class="stat-box" style="color:var(--poppy-red)"><span>MYTH</span><b>${counts.Mythic}</b></div>
+                    <div class="stat-box"><span class="rainbow-text">SECRET</span><b class="rainbow-text">${counts.Secret}</b></div>
+                    <div class="stat-box"><span class="nightmare-text">NIGHT</span><b class="nightmare-text">${counts.Nightmare}</b></div>
+                </div>`;
+                charNames.forEach(name => { 
+                    const owned = collection[name] || []; 
+                    list.innerHTML += `<div class="index-row" onclick="spectate('${name}')"><span style="color:${owned.length > 0 ? 'white' : '#444'}">${name}</span><span style="font-size:0.6rem; color:#555">${owned.length}/7</span></div>`; 
+                });
+            } else {
+                for(let i=1; i<=20; i++) {
+                    let target = i * 50; let unlocked = totalSpins >= target;
+                    list.innerHTML += `<div style="padding:10px; background:#111; margin-bottom:5px; border-left: 4px solid ${unlocked ? 'var(--luck-green)' : '#333'}"><b>TIER ${i}</b> (${totalSpins}/${target})</div>`;
+                }
+            }
+            document.getElementById('idxModal').style.display = 'flex'; 
+        }
+
+        function spectate(name) { 
+            const owned = collection[name] || []; if(owned.length === 0) return; 
+            play(900, 'sine', 0.1, 0.1);
+            document.getElementById('specName').innerText = name; 
+            const sl = document.getElementById('specList'); sl.innerHTML = ""; 
+            let permLuck = 1 + (rebirths * 0.1);
+            rarities.forEach(r => { 
+                const has = owned.includes(r.id); 
+                let dynamicBase = Math.floor(r.chance * (0.8 + ((name.length * 7) % 20) / 100));
+                const odd = Math.round(dynamicBase / permLuck).toLocaleString();
+                if (r.id === "Secret") sl.innerHTML += `<div class="spec-item"><span class="${has ? 'rainbow-text' : ''}" style="${has ? '' : 'color:#222'}">SECRET</span><span class="${has ? 'rainbow-text' : ''}" style="${has ? '' : 'color:#222'}">1 in ${odd}</span></div>`;
+                else if (r.id === "Nightmare") sl.innerHTML += `<div class="spec-item"><span class="${has ? 'nightmare-text' : ''}" style="${has ? '' : 'color:#222'}">NIGHTMARE</span><span class="${has ? 'nightmare-text' : ''}" style="${has ? '' : 'color:#222'}">1 in ${odd}</span></div>`;
+                else sl.innerHTML += `<div class="spec-item" style="color:${has ? r.color : '#222'}"><span>${r.id}</span><span>1 in ${odd}</span></div>`; 
+            }); 
+            document.getElementById('specCard').style.display = 'block'; 
+        }
+
+        function setLuck(v, c, btn) { if(isSpinning) return; play(400+(v*5), 'sine', 0.1, 0.1); luck = v; lCost = c; document.querySelectorAll('.luck-btn').forEach(b => b.classList.remove('active')); btn.classList.add('active'); }
+        function toggleQuick() { play(1000, 'sine', 0.05, 0.05); isQuick = !isQuick; updateButtonStates(); }
+        function toggleAuto() { play(1200, 'sine', 0.05, 0.05); isAuto = !isAuto; updateButtonStates(); if (isAuto) startSpin(); }
+        function updateButtonStates() {
+            document.getElementById('autoBtn').innerText = isAuto ? "AUTO: ON" : "AUTO: OFF";
+            document.getElementById('autoBtn').className = isAuto ? "toggle-active" : "";
+            document.getElementById('quickBtn').innerText = isQuick ? "QUICK: ON" : "QUICK: OFF";
+            document.getElementById('quickBtn').className = isQuick ? "toggle-active" : "";
+        }
+        
+        function doRebirth() {
+            let rbCost = Math.floor(1000 * Math.pow(1.5, rebirths));
+            if (flowers >= rbCost) { 
+                flowers = 0; rebirths++; 
+                play(200, 'sine', 0.3, 0.2); play(800, 'sine', 0.3, 0.8); 
+                updateUI(); 
+                showAlert("REBIRTH COMPLETE!", "var(--gold)"); 
+            } 
+            else { play(150, 'sawtooth', 0.1, 0.2); showAlert("NEED FLOWERS!", "var(--poppy-red)"); }
+        }
+
+        function toggleIndexTab() { play(700, 'sine', 0.1, 0.1); currentTab = (currentTab === "index" ? "ach" : "index"); openIndex(true); }
+        function closeSpec() { play(400, 'sine', 0.1, 0.1); document.getElementById('specCard').style.display = 'none'; }
+        function closeIndex() { play(400, 'sine', 0.1, 0.1); document.getElementById('idxModal').style.display = 'none'; }
+        function showAlert(m, c) { const e = document.getElementById('game-alert'); e.innerText = m; e.style.color = c; }
+        updateUI();
+    </script>
+</body>
+</html>
